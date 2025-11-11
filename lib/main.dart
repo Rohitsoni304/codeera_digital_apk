@@ -3,8 +3,10 @@ import 'package:codeera_digital_apk/BottomBar.dart';
 import 'package:codeera_digital_apk/Subscription_Screen.dart';
 import 'package:flutter/material.dart';
 
+import 'Agoranewchats.dart';
 import 'HomeScreen.dart';
 import 'SplashScreen.dart';
+import 'agorasdk.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +39,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  Bottombar()
+      home:  AgoraChatScreen()
     );
   }
 }
