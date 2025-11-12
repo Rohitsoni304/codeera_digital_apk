@@ -1,5 +1,7 @@
 import 'package:bubble_navigation_bar/bubble_navigation_bar.dart';
+import 'package:codeera_digital_apk/Agoranewchats.dart';
 import 'package:codeera_digital_apk/Chat_screen.dart';
+
 import 'package:codeera_digital_apk/profile_Screen.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +24,7 @@ class _BottombarState extends State<Bottombar> {
   final List<Widget> screens = [
     const HomeScreen(),
     const OverviewScreen(),
-    const ChatListUI(),
+    const AgoraChatScreen(),
     const ProfileScreen(),
 
   ];

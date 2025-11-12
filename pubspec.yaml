@@ -36,23 +36,19 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   fl_chart: ^0.69.0
-
-  uuid: ^3.0.6
   shimmer: ^3.0.0
   google_nav_bar: ^5.0.6     # 🧭 For the bottom navigation bar
   font_awesome_flutter: ^10.6.0
   http: ^1.2.2
+  agora_rtm: ^1.6.3
   intl: any
   file_picker: ^10.3.3
   image_picker: any
-  agora_rtm: ^1.6.3
   bubble_navigation_bar: ^0.0.2
   shared_preferences: ^2.2.2
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
