@@ -356,21 +356,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               SizedBox(height: height * 0.015),
 
-              SizedBox(
-                height: height * 0.15,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children:  [
-                    InkWell(onTap: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context)=>TodayVideosScreen()));
-                    },
-                        child: UploadCard(title: "Today's\nVideos", color: Colors.redAccent)),
-                    UploadCard(title: "Today's\nPosters", color: Colors.amberAccent),
-                    UploadCard(title: "Posters", color: Colors.brown),
-                    UploadCard(title: "Videos", color: Colors.amber),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

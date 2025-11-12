@@ -142,32 +142,34 @@ class _Subscription_ScreenState extends State<Subscription_Screen> {
             const SizedBox(height: 15),
 
             /// 🔹 Horizontal scroll plans
-            Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: plans.length,
-                itemBuilder: (context, index) {
-                  final plan = plans[index];
-                  final bool isActive =
-                  (currentPlan?["plan_name"] == plan["name"]);
+            Container(height: 500,
+              child: Expanded(
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: plans.length,
+                  itemBuilder: (context, index) {
+                    final plan = plans[index];
+                    final bool isActive =
+                    (currentPlan?["plan_name"] == plan["name"]);
 
-                  // 🎨 Different gradient color for each plan
-                  final gradients = [
-                    [const Color(0xFF6D5DF6), const Color(0xFF8369F4)],
-                    [const Color(0xFF00BFA5), const Color(0xFF1DE9B6)],
-                    [const Color(0xFFFFB74D), const Color(0xFFFF9800)],
-                    [const Color(0xFF42A5F5), const Color(0xFF478DE0)],
-                    [const Color(0xFFE91E63), const Color(0xFFFF4081)],
-                  ];
+                    // 🎨 Different gradient color for each plan
+                    final gradients = [
+                      [const Color(0xFF6D5DF6), const Color(0xFF8369F4)],
+                      [const Color(0xFF00BFA5), const Color(0xFF1DE9B6)],
+                      [const Color(0xFFFFB74D), const Color(0xFFFF9800)],
+                      [const Color(0xFF42A5F5), const Color(0xFF478DE0)],
+                      [const Color(0xFFE91E63), const Color(0xFFFF4081)],
+                    ];
 
-                  final colors = gradients[index % gradients.length];
+                    final colors = gradients[index % gradients.length];
 
-                  return Container(
-                    width: 300,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: _planCard(plan, isActive, colors),
-                  );
-                },
+                    return Container(
+                      width: 300,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: _planCard(plan, isActive, colors),
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -217,7 +219,7 @@ class _Subscription_ScreenState extends State<Subscription_Screen> {
 
     return Container(
       width: 300,
-      constraints: const BoxConstraints(minHeight: 340, maxHeight: 450),
+      constraints: const BoxConstraints(minHeight: 340, maxHeight: 400),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: colors,
@@ -316,24 +318,26 @@ class _Subscription_ScreenState extends State<Subscription_Screen> {
           const SizedBox(height: 8),
           if (!isActive)
             Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Upgrade to ${plan['name']} clicked!")),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: colors.first,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                ),
-                child: const Text(
-                  "Upgrade",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13),
+              child: Container(height: 40,width: 220,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Upgrade to ${plan['name']} clicked!")),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: colors.first,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  ),
+                  child: const Text(
+                    "Upgrade",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
               ),
             ),

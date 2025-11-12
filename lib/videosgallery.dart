@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
+import 'Todaysvideo.dart';
+
 class TodayVideosGalleryScreen extends StatefulWidget {
   const TodayVideosGalleryScreen({super.key});
 
@@ -296,14 +298,18 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
           const SizedBox(height: 6),
 
           // ----- Title -----
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+          InkWell(onTap: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>TodayVideosScreen()));
+          },
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
 
