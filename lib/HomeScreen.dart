@@ -1,4 +1,5 @@
 import 'package:codeera_digital_apk/File_uploadScreen.dart';
+import 'package:codeera_digital_apk/Notification_Services.dart';
 import 'package:codeera_digital_apk/Overview_screen.dart';
 import 'package:codeera_digital_apk/posters.dart';
 import 'package:codeera_digital_apk/videosgallery.dart';
@@ -111,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     getprofile();
     getdata();
     getprogress();
+    NotificationService.initialize();
   }
 
   @override

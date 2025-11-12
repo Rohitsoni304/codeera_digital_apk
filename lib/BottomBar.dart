@@ -24,7 +24,7 @@ class _BottombarState extends State<Bottombar> {
   final List<Widget> screens = [
     const HomeScreen(),
     const OverviewScreen(),
-    const AgoraChatScreen(),
+    const ChatListUI(),
     const ProfileScreen(),
 
   ];
