@@ -1,26 +1,29 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:agora_rtm/agora_rtm.dart';
+import 'package:flutter/material.dart';
 
-/// 🔑 Your Agora credentials
+/// ---------------------------------------------------------------
+/// 1. ONLY App ID is needed (token auth disabled in console)
+/// ---------------------------------------------------------------
 const String kAgoraAppId = '5173727a6a9f43b490469432056158fa';
-const String? kRtmToken ='007eJxTYDAXbjRyXJLxxqLk4pYVC5bzzIwtZfoQIN49bdnzpW+7J+9UYDA1NDc2NzJPNEu0TDMxTjKxNDAxszQxNjIwNTM0tUhL9NMQyWwIZGTYuEyNlZGBlYERCEF8FQbDxEQjc0MDA92kNItUXUPDNAPdxOTENF3TlCTL5GTz5KRES1MAFO0mug==';
 
-class AgoraChatScreen extends StatefulWidget {
-  const AgoraChatScreen({Key? key}) : super(key: key);
-
+class AgoraChatScreen2 extends StatefulWidget {
+  const AgoraChatScreen2({Key? key}) : super(key: key);
   @override
-  State<AgoraChatScreen> createState() => _AgoraChatScreenState();
+  State<AgoraChatScreen2> createState() => _AgoraChatScreen2State();
 }
 
-class _AgoraChatScreenState extends State<AgoraChatScreen> {
+class _AgoraChatScreen2State extends State<AgoraChatScreen2> {
+  // Controllers
   late final TextEditingController _userIdCtr;
   late final TextEditingController _channelCtr;
   late final TextEditingController _msgCtr;
 
+  // RTM objects
   AgoraRtmClient? _rtmClient;
   AgoraRtmChannel? _rtmChannel;
 
+  // UI state
   final List<_ChatMessage> _messages = [];
   bool _isLoggedIn = false;
   bool _isJoined = false;
@@ -29,27 +32,27 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
   @override
   void initState() {
     super.initState();
-    _userIdCtr = TextEditingController(
-        text: 'rishu123');
+    _userIdCtr = TextEditingController(text: 'rishu123');
     _channelCtr = TextEditingController(text: 'global');
     _msgCtr = TextEditingController();
+
     _initRtmClient();
   }
 
+  // ---------------------------------------------------------------
+  // 2. Initialise client + callbacks
+  // ---------------------------------------------------------------
   Future<void> _initRtmClient() async {
     _rtmClient = await AgoraRtmClient.createInstance(kAgoraAppId);
 
-    // Handle peer messages
-    _rtmClient?.onMessageReceived =
-        (RtmMessage message, String peerId) {
+    // Peer messages
+    _rtmClient?.onMessageReceived = (RtmMessage msg, String peerId) {
       _pushMsg(_ChatMessage(
         author: peerId,
-        text: message.text ?? '',
+        text: msg.text ?? '',
         isLocal: false,
       ));
     };
-
-
 
     // Connection state
     _rtmClient!.onConnectionStateChanged2 =
@@ -65,30 +68,33 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
     };
   }
 
+  // ---------------------------------------------------------------
+  // 3. Login with **empty token** (token auth disabled)
+  // ---------------------------------------------------------------
   Future<void> _login() async {
     if (_rtmClient == null) return;
 
-    final userId = _userIdCtr.text.trim();
+    final userId = 'rishu123';
     if (userId.isEmpty) {
       _toast('User ID cannot be empty', isError: true);
       return;
     }
 
     try {
-      print(kRtmToken);
-      await _rtmClient!.login(kRtmToken, 'rishu123');
+      // Empty token → works only when token auth is OFF
+      await _rtmClient!.login('007eJxTYDAXbjRyXJLxxqLk4pYVC5bzzIwtZfoQIN49bdnzpW+7J+9UYDA1NDc2NzJPNEu0TDMxTjKxNDAxszQxNjIwNTM0tUhL9NMQyWwIZGTYuEyNlZGBlYERCEF8FQbDxEQjc0MDA92kNItUXUPDNAPdxOTENF3TlCTL5GTz5KRES1MAFO0mug==', userId);
       setState(() => _isLoggedIn = true);
-      _toast('✅ Logged in as $userId');
+      _toast('Logged in as $userId');
     } on AgoraRtmClientException catch (e) {
-      // Print exact code and message
-      print('Agora RTM Login Error -> code: ${e.code}, message: ${e}');
       _toast('Login failed [${e.code}] ${e}', isError: true);
     } catch (e) {
-      print('Unknown login error: $e');
       _toast('Login failed: $e', isError: true);
     }
   }
 
+  // ---------------------------------------------------------------
+  // 4. Logout
+  // ---------------------------------------------------------------
   Future<void> _logout() async {
     try {
       await _leaveChannel();
@@ -100,6 +106,9 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
     }
   }
 
+  // ---------------------------------------------------------------
+  // 5. Join / Leave channel
+  // ---------------------------------------------------------------
   Future<void> _joinChannel() async {
     if (!_isLoggedIn) {
       _toast('Please login first', isError: true);
@@ -112,24 +121,19 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
       _rtmChannel = await _rtmClient?.createChannel(channelId);
 
       _rtmChannel?.onMessageReceived =
-          (RtmMessage message, RtmChannelMember member) {
+          (RtmMessage msg, RtmChannelMember member) {
         _pushMsg(_ChatMessage(
           author: member.userId,
-          text: message.text ?? '',
+          text: msg.text ?? '',
           isLocal: false,
         ));
       };
-
-      _rtmChannel?.onMemberJoined = (RtmChannelMember member) {
-        _pushSys('🟢 ${member.userId} joined');
-      };
-      _rtmChannel?.onMemberLeft = (RtmChannelMember member) {
-        _pushSys('🔴 ${member.userId} left');
-      };
+      _rtmChannel?.onMemberJoined = (member) => _pushSys('${member.userId} joined');
+      _rtmChannel?.onMemberLeft = (member) => _pushSys('${member.userId} left');
 
       await _rtmChannel?.join();
       setState(() => _isJoined = true);
-      _pushSys('✅ Joined channel: $channelId');
+      _pushSys('Joined channel: $channelId');
     } catch (e) {
       _toast('Join failed: $e', isError: true);
     }
@@ -143,9 +147,13 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
     setState(() => _isJoined = false);
   }
 
+  // ---------------------------------------------------------------
+  // 6. Send message
+  // ---------------------------------------------------------------
   Future<void> _sendChannelMessage() async {
     final text = _msgCtr.text.trim();
     if (text.isEmpty || !_isJoined) return;
+
     try {
       await _rtmChannel?.sendMessage(RtmMessage.fromText(text));
       _pushMsg(_ChatMessage(
@@ -159,14 +167,14 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
     }
   }
 
-  void _pushMsg(_ChatMessage m) {
-    setState(() => _messages.add(m));
-  }
+  // ---------------------------------------------------------------
+  // 7. UI helpers
+  // ---------------------------------------------------------------
+  void _pushMsg(_ChatMessage m) => setState(() => _messages.add(m));
 
-  void _pushSys(String s) {
-    setState(() => _messages
-        .add(_ChatMessage(author: 'system', text: s, isSystem: true)));
-  }
+  void _pushSys(String s) => setState(() => _messages.add(
+    _ChatMessage(author: 'system', text: s, isSystem: true),
+  ));
 
   void _toast(String msg, {bool isError = false}) {
     if (!mounted) return;
@@ -189,6 +197,9 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------
+  // 8. UI (unchanged)
+  // ---------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final canLogin = !_isLoggedIn;
@@ -268,14 +279,11 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
                         onPressed: canJoin
                             ? _joinChannel
                             : (_isJoined ? _leaveChannel : null),
-                        icon: Icon(canJoin
-                            ? Icons.meeting_room
-                            : Icons.exit_to_app),
+                        icon: Icon(
+                            canJoin ? Icons.meeting_room : Icons.exit_to_app),
                         label: Text(canJoin
                             ? 'Join Channel'
-                            : (_isJoined
-                            ? 'Leave Channel'
-                            : 'Join Channel')),
+                            : (_isJoined ? 'Leave Channel' : '')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                           canJoin ? Colors.blueAccent : Colors.orange,
@@ -288,18 +296,17 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
               ],
             ),
           ),
-
           const Divider(height: 1),
 
-          // Messages
+          // Message list
           Expanded(
             child: Container(
               color: const Color(0xFFF7F9FC),
               child: ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final m = _messages[index];
+                itemBuilder: (context, i) {
+                  final m = _messages[i];
                   if (m.isSystem) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -312,26 +319,22 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
                     );
                   }
                   return Align(
-                    alignment: m.isLocal
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
+                    alignment:
+                    m.isLocal ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       padding: const EdgeInsets.all(10),
                       constraints: BoxConstraints(
-                          maxWidth:
-                          MediaQuery.of(context).size.width * 0.7),
+                        maxWidth: MediaQuery.of(context).size.width * 0.7,
+                      ),
                       decoration: BoxDecoration(
-                        color: m.isLocal
-                            ? Colors.blueAccent
-                            : Colors.white,
+                        color: m.isLocal ? Colors.blueAccent : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: const [
                           BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          )
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2)),
                         ],
                       ),
                       child: Column(
@@ -343,9 +346,8 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
                             m.author,
                             style: TextStyle(
                               fontSize: 11,
-                              color: m.isLocal
-                                  ? Colors.white70
-                                  : Colors.black54,
+                              color:
+                              m.isLocal ? Colors.white70 : Colors.black54,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -353,9 +355,7 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
                             m.text,
                             style: TextStyle(
                               fontSize: 14,
-                              color: m.isLocal
-                                  ? Colors.white
-                                  : Colors.black87,
+                              color: m.isLocal ? Colors.white : Colors.black87,
                             ),
                           ),
                         ],
@@ -380,8 +380,9 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
                       controller: _msgCtr,
                       enabled: canSend,
                       decoration: InputDecoration(
-                        hintText:
-                        canSend ? 'Type a message…' : 'Join a channel to chat',
+                        hintText: canSend
+                            ? 'Type a message…'
+                            : 'Join a channel to chat',
                         border: const OutlineInputBorder(),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
@@ -417,6 +418,7 @@ class _AgoraChatScreenState extends State<AgoraChatScreen> {
   );
 }
 
+// -----------------------------------------------------------------
 class _ChatMessage {
   final String author;
   final String text;

@@ -40,17 +40,12 @@ dependencies:
   google_nav_bar: ^5.0.6     # 🧭 For the bottom navigation bar
   font_awesome_flutter: ^10.6.0
   http: ^1.2.2
+  agora_rtm: ^1.6.3
   intl: any
   file_picker: ^10.3.3
   image_picker: any
   bubble_navigation_bar: ^0.0.2
   shared_preferences: ^2.2.2
-  firebase_auth: ^6.1.2
-  firebase_core: ^4.2.1
-  cloud_firestore: ^6.1.0
-  firebase_storage: ^13.0.4
-  firebase_messaging: ^16.0.4
-  flutter_local_notifications: ^19.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
