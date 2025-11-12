@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       final data = jsonDecode(response.body);
+      print(data);
 
       if (response.statusCode == 200) {
         setState(() {

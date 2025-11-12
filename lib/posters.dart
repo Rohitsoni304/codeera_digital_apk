@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,70 +11,107 @@ class posterGalleryScreen extends StatefulWidget {
 }
 
 class _posterGalleryScreenState extends State<posterGalleryScreen> {
+  List<dynamic> tasks = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  final String baseUrl = "https://codeeratech.in//uploads/tasks/";
+
   Future<void> getdata() async {
     print('startapi');
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken'); // 👈 token saved earlier
+    final token = prefs.getString('authToken');
 
-
+    if (token == null) {
+      setState(() {
+        errorMessage = "Authentication token missing";
+        isLoading = false;
+      });
+      return;
+    }
 
     try {
       final response = await http.get(
         Uri.parse("https://codeeratech.in/api/user/tasks?type=post"),
-        headers: {"Content-Type": "application/json",
-          "Authorization": "Bearer $token",},
-
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
       );
 
       final data = jsonDecode(response.body);
       print(data);
 
-
       if (response.statusCode == 200) {
         setState(() {
-
+          tasks = data['tasks'] ?? [];
+          isLoading = false;
         });
-        // ✅ Show message clearly with number
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'ok'
-            ),
+            content: Text('Loaded ${tasks.length} posts'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
           ),
         );
-
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"] ?? "Something went wrong ❌"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        setState(() {
+          errorMessage = data["message"] ?? "Failed to load data";
+          isLoading = false;
+        });
+        _showError(data["message"] ?? "Something went wrong");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Network error: $e"),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      setState(() {
+        errorMessage = "Network error: $e";
+        isLoading = false;
+      });
+      _showError("Network error: $e");
     }
   }
 
-  int _selectedIndex = 0;
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getdata();
   }
+
+  String _getStatusText(int status) {
+    switch (status) {
+      case 0:
+        return "Pending";
+      case 5:
+        return "Completed";
+      default:
+        return "Unknown";
+    }
+  }
+
+  Color _getStatusColor(int status) {
+    switch (status) {
+      case 0:
+        return Colors.orange.shade600;
+      case 5:
+        return Colors.green.shade600;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final videos = List.generate(20, (index) => "assets/images/video_placeholder.jpg");
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -85,8 +121,6 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 15),
-
-              // 🏷 Title (Outside AppBar)
               const Center(
                 child: Text(
                   "Today's Posts",
@@ -97,22 +131,68 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              // 🎬 Grid Gallery
+              // Loading / Error / Data
               Expanded(
-                child: GridView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // more columns for 5+ rows
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
-                    childAspectRatio: 0.75, // controls height ratio
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : errorMessage != null
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 60, color: Colors.red.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 16, color: Colors.red.shade700),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            isLoading = true;
+                            errorMessage = null;
+                          });
+                          getdata();
+                        },
+                        child: const Text("Retry"),
+                      ),
+                    ],
                   ),
-                  itemCount: videos.length,
+                )
+                    : tasks.isEmpty
+                    ? const Center(
+                  child: Text(
+                    "No posts available",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                )
+                    : GridView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: tasks.length,
                   itemBuilder: (context, index) {
-                    return _videoCard(videos[index]);
+                    final task = tasks[index];
+                    final imageUrl = task['file_path'] != null
+                        ? baseUrl + task['file_path']
+                        : null;
+
+                    return _posterCard(
+                      imageUrl: imageUrl,
+                      title: task['title'] ?? "Untitled",
+                      status: task['status'] ?? 0,
+                    );
                   },
                 ),
               ),
@@ -123,39 +203,86 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
     );
   }
 
-  // 🔹 Individual video card
-  Widget _videoCard(String imagePath) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          // 👇 Softer and lighter shadow
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
+  Widget _posterCard({
+    required String? imageUrl,
+    required String title,
+    required int status,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl != null
+                  ? Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image,
+                        color: Colors.grey, size: 30),
+                  );
+                },
+              )
+                  : Container(
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image,
+                    color: Colors.grey, size: 30),
+              ),
+            ),
           ),
-        ],
-        image: DecorationImage(
-          image: AssetImage(imagePath),
-          fit: BoxFit.cover,
         ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: LinearGradient(
-            colors: [
-              Colors.black.withOpacity(0.25),
-              Colors.transparent,
-            ],
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
+        const SizedBox(height: 6),
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
           ),
         ),
-        child: const Center(
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _getStatusColor(status),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            _getStatusText(status),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
