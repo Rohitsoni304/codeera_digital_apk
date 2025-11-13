@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'HomeScreen.dart';
 import 'LoginScreen.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
+
 
 
 class Splashscreen extends StatefulWidget {
@@ -25,7 +27,7 @@ class _SplashscreenState extends State<Splashscreen>
     // 🎬 Animation setup
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(seconds: 1),
     );
 
     // 🔹 Slide animation (bottom → center)
@@ -67,7 +69,7 @@ class _SplashscreenState extends State<Splashscreen>
     });
 
     // ⏰ Navigate to next screen after 3 seconds
-    Timer(const Duration(seconds: 3), () {
+    Timer(const Duration(seconds: 4), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -88,6 +90,7 @@ class _SplashscreenState extends State<Splashscreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: Color.fromRGBO(246, 240, 240, 1.0),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -112,23 +115,41 @@ class _SplashscreenState extends State<Splashscreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // 🖼 Logo
-                Image.asset(
-                  "assets/images/codeera-logo.png",
-                  height: size.height * 0.2,
+                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Container( height: size.height * 0.1,width:size.width*0.2 ,
+                      child: Image.asset(
+                        "assets/images/codeera-logo.png",
+
+                      ),
+                    ),
+
+                    Text("COODEERA TECHNOLOGY",style: TextStyle(fontSize: 20),)
+                  ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 30),
 
                 // 📝 Text
-                const Text(
-                  "INNOVATE | AUTOMATE | SUCCEED",
-                  style: TextStyle(
-                    color: Colors.black26,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+        AnimatedTextKit(
+          animatedTexts: [
+            TypewriterAnimatedText(
+              'INNOVATE | AUTOMATE | SUCCEED',
+              textStyle: const TextStyle(
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+              speed: const Duration(milliseconds: 90),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          totalRepeatCount: 1,
+          pause: const Duration(milliseconds: 500),
+          displayFullTextOnTap: true,
+          stopPauseOnTap: true,
+        ),
+
               ],
             ),
           ),
