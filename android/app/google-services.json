@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "850587942003",
+    "project_id": "codeera-digital",
+    "storage_bucket": "codeera-digital.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:850587942003:android:6e4c2f411c6df093effe06",
+        "android_client_info": {
+          "package_name": "com.example.codeera_digital_apk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCH4-xfZbEQOte-mEJ4G7STttOgssGUmKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
