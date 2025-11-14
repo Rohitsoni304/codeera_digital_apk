@@ -124,7 +124,7 @@ class _SplashscreenState extends State<Splashscreen>
                       ),
                     ),
 
-                    Text("COODEERA TECHNOLOGY",style: TextStyle(fontSize: 20),)
+                    Text("CODEERA TECHNOLOGY",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),)
                   ],
                 ),
                 const SizedBox(height: 30),

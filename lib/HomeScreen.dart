@@ -9,6 +9,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'BottomBar.dart';
 import 'constant.dart';
@@ -29,6 +30,309 @@ String posts = '';
 String totalvideos = '';
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<dynamic> tasks = [];
+  List<dynamic> tasks2 = [];
+
+  bool isLoading = true;
+  String? errorMessage;
+
+  final String baseUrl = "https://codeeratech.in//uploads/tasks/";
+  Widget _posterCard({
+    required String? imageUrl,
+    required String title,
+    required int status,
+    required int id,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl != null
+                  ? Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image,
+                        color: Colors.grey, size: 30),
+                  );
+                },
+              )
+                  : Container(
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image,
+                    color: Colors.grey, size: 30),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        status==3?InkWell(onTap: (){
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>UploadScreen(taskid: id.toString(),)));
+        },child: Container(  decoration: BoxDecoration(
+          color:Colors.red,
+          borderRadius: BorderRadius.circular(4),
+        ),child: Center(child: Text("Need Changes",style: TextStyle(color: Colors.white),)),)):SizedBox(),
+        status==0? InkWell(onTap: (){
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>UploadScreen(taskid: id.toString(),)));
+        },child: Container(  decoration: BoxDecoration(
+          color:Colors.black,
+          borderRadius: BorderRadius.circular(4),
+        ),child: Center(child: Text("update Status",style: TextStyle(color: Colors.white),)),)):SizedBox(),
+        SizedBox(height: 10,),
+
+      ],
+    );
+  }
+  Widget _posterCardvideo({
+    required String? imageUrl,
+    required String title,
+    required int status,
+    required int id,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl != null
+                  ? Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image,
+                        color: Colors.grey, size: 30),
+                  );
+                },
+              )
+                  : Container(
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image,
+                    color: Colors.grey, size: 30),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        status==0? InkWell(onTap: (){
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>UploadScreen(taskid: id.toString(),)));
+        },child: Container(  decoration: BoxDecoration(
+          color:Colors.black,
+          borderRadius: BorderRadius.circular(4),
+        ),child: Center(child: Text("update Status",style: TextStyle(color: Colors.white),)),)):SizedBox(),
+        SizedBox(height: 10,),
+
+      ],
+    );
+  }
+  Future<void> gettodaypostdata() async {
+    print('startapi');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      setState(() {
+        errorMessage = "Authentication token missing";
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse("https://codeeratech.in/api/user/tasks?type=post"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      print(data);
+
+      if (response.statusCode == 200) {
+        List<dynamic> allTasks = data['tasks'] ?? [];
+
+        // ✅ Get today's date in "yyyy-MM-dd" format
+        final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+        // ✅ Filter tasks where created_at matches today's date
+        final filteredTasks = allTasks.where((task) {
+          final createdAt = task['created_at'] ?? '';
+          if (createdAt.isEmpty) return false;
+          // Extract only the date portion (yyyy-MM-dd)
+          final createdDate = createdAt.split(' ')[0];
+          return createdDate == today;
+        }).toList();
+
+        setState(() {
+          tasks = filteredTasks;
+          isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded ${filteredTasks.length} tasks for today'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        setState(() {
+          errorMessage = data["message"] ?? "Failed to load data";
+          isLoading = false;
+        });
+       // _showError(data["message"] ?? "Something went wrong");
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Network error: $e";
+        isLoading = false;
+      });
+     // _showError("Network error: $e");
+    }
+  }
+  Future<void> gettodaypostdatavideo() async {
+    print('startapi');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      setState(() {
+        errorMessage = "Authentication token missing";
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse("https://codeeratech.in/api/user/tasks?type=video"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      print(data);
+
+      if (response.statusCode == 200) {
+        List<dynamic> allTasks = data['tasks'] ?? [];
+
+        // ✅ Get today's date in "yyyy-MM-dd" format
+        final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+        // ✅ Filter tasks where created_at matches today's date
+        final filteredTasks = allTasks.where((task) {
+          final createdAt = task['created_at'] ?? '';
+          if (createdAt.isEmpty) return false;
+          // Extract only the date portion (yyyy-MM-dd)
+          final createdDate = createdAt.split(' ')[0];
+          return createdDate == today;
+        }).toList();
+
+        setState(() {
+          tasks2 = filteredTasks;
+          isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded ${filteredTasks.length} tasks for today'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        setState(() {
+          errorMessage = data["message"] ?? "Failed to load data";
+          isLoading = false;
+        });
+        // _showError(data["message"] ?? "Something went wrong");
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Network error: $e";
+        isLoading = false;
+      });
+      // _showError("Network error: $e");
+    }
+  }
+
+
   Future<void> getdata() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
@@ -82,6 +386,82 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildTaskContainer(List tasks, bool isLoading, String? errorMessage) {
+    return Container(
+      width: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(8),
+      child: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline,
+                size: 40, color: Colors.red.shade400),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage,
+              textAlign: TextAlign.center,
+              style:
+              TextStyle(fontSize: 14, color: Colors.red.shade700),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  isLoading = true;
+                  errorMessage = null;
+                });
+                getdata();
+              },
+              child: const Text("Retry"),
+            ),
+          ],
+        ),
+      )
+          : tasks.isEmpty
+          ? const Center(
+        child: Text(
+          "No posts available",
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      )
+          : ListView.builder(
+        scrollDirection: Axis.horizontal, // horizontal scroll
+        physics: const BouncingScrollPhysics(),
+        itemCount: 1,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          final imageUrl = task['file_path'] != null
+              ? baseUrl + task['file_path']
+              : null;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: _posterCard(
+              imageUrl: imageUrl,
+              title: task['title'] ?? "Untitled",
+              status: task['status'] ?? 0,
+              id: task['id'] ?? 0,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> getprogress() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
@@ -114,6 +494,8 @@ class _HomeScreenState extends State<HomeScreen> {
     getdata();
     getprogress();
     NotificationService.initialize();
+    gettodaypostdata();
+    gettodaypostdatavideo();
   }
 
   @override
@@ -349,28 +731,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
               SizedBox(height: height * 0.03),
 
+
               /// 🆕 Recent Uploads
               Text(
                 "Recent Uploads",
                 style: TextStyle(fontSize: width * 0.05, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: height * 0.015),
-
               SizedBox(
-                height: height * 0.15,
+                height: 180,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children:  [
-                    InkWell(onTap: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context)=>TodayVideosScreen()));
-                    },
-                        child: UploadCard(title: "Today's\nVideos", color: Colors.redAccent)),
-                    UploadCard(title: "Today's\nPosters", color: Colors.amberAccent),
-                    UploadCard(title: "Posters", color: Colors.brown),
-                    UploadCard(title: "Videos", color: Colors.amber),
+                  children: [
+                    _buildTaskContainer(tasks, isLoading, errorMessage),
+                    const SizedBox(width: 12),
+                    _buildTaskContainer(tasks2, isLoading, errorMessage),
                   ],
                 ),
               ),
+
+              // SizedBox(
+              //   height: height * 0.15,
+              //   child: ListView(
+              //     scrollDirection: Axis.horizontal,
+              //     children:  [
+              //
+              //       InkWell(onTap: (){
+              //         Navigator.push(context, MaterialPageRoute(builder: (context)=>TodayVideosScreen()));
+              //       },
+              //           child: UploadCard(title: "Today's\nVideos", color: Colors.redAccent)),
+              //       UploadCard(title: "Today's\nPosters", color: Colors.amberAccent),
+              //       UploadCard(title: "Posters", color: Colors.brown),
+              //       UploadCard(title: "Videos", color: Colors.amber),
+              //     ],
+              //   ),
+              // ),
             ],
           ),
         ),

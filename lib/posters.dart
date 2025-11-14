@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'package:codeera_digital_apk/todaypost.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'File_uploadScreen.dart';
 
 class posterGalleryScreen extends StatefulWidget {
   const posterGalleryScreen({super.key});
@@ -11,6 +15,76 @@ class posterGalleryScreen extends StatefulWidget {
 }
 
 class _posterGalleryScreenState extends State<posterGalleryScreen> {
+  Future<void> getdasta() async {
+    print('startapi');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      setState(() {
+        errorMessage = "Authentication token missing";
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse("https://codeeratech.in/api/user/tasks?type=post"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      print(data);
+
+      if (response.statusCode == 200) {
+        List<dynamic> allTasks = data['tasks'] ?? [];
+
+        // ✅ Get today's date in "yyyy-MM-dd" format
+        final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+        // ✅ Filter tasks where created_at matches today's date
+        final filteredTasks = allTasks.where((task) {
+          final createdAt = task['created_at'] ?? '';
+          if (createdAt.isEmpty) return false;
+          // Extract only the date portion (yyyy-MM-dd)
+          final createdDate = createdAt.split(' ')[0];
+          return createdDate == today;
+        }).toList();
+
+        setState(() {
+          tasks = filteredTasks;
+          isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded ${filteredTasks.length} tasks for today'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        setState(() {
+          errorMessage = data["message"] ?? "Failed to load data";
+          isLoading = false;
+        });
+        _showError(data["message"] ?? "Something went wrong");
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Network error: $e";
+        isLoading = false;
+      });
+      _showError("Network error: $e");
+    }
+  }
+
+
   List<dynamic> tasks = [];
   bool isLoading = true;
   String? errorMessage;
@@ -123,7 +197,7 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
               const SizedBox(height: 15),
               const Center(
                 child: Text(
-                  "Today's Posts",
+                  "Posts",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -138,7 +212,8 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : errorMessage != null
-                    ? Center(
+                    ?
+                Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -172,14 +247,15 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 )
-                    : GridView.builder(
+                    :
+                GridView.builder(
                   physics: const BouncingScrollPhysics(),
                   gridDelegate:
                   const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 8,
+                    crossAxisSpacing: 18,
                     mainAxisSpacing: 8,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.51,
                   ),
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
@@ -192,6 +268,7 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                       imageUrl: imageUrl,
                       title: task['title'] ?? "Untitled",
                       status: task['status'] ?? 0,
+                      id: task['id']??0
                     );
                   },
                 ),
@@ -203,86 +280,156 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
     );
   }
 
-  Widget _posterCard({
+  Widget  _posterCard({
     required String? imageUrl,
     required String title,
     required int status,
+    required int id,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                TodayPostscreen(postimage: imageUrl.toString(),id: id.toString(),name:title ,),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              Colors.grey.shade50,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imageUrl != null
-                  ? Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+          ],
+        ),
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            // IMAGE
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: imageUrl != null
+                    ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.grey.shade200, Colors.grey.shade300],
+                        ),
+                      ),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: Icon(Icons.broken_image,
+                          color: Colors.grey.shade500, size: 32),
+                    );
+                  },
+                )
+                    : Container(
+                  color: Colors.grey.shade200,
+                  child: Icon(Icons.image,
+                      color: Colors.grey.shade400, size: 32),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 10),
+
+            // TITLE
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                height: 1.2,
+              ),
+            ),
+
+            SizedBox(height: 8),
+
+            // STATUS BUTTON
+            if (status == 0)
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UploadScreen(taskid: id.toString()),
                     ),
                   );
                 },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.broken_image,
-                        color: Colors.grey, size: 30),
-                  );
-                },
-              )
-                  : Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.image,
-                    color: Colors.grey, size: 30),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Update Status",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            SizedBox(height: 10),
+
+            // STATUS TAG
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getStatusColor(status),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _getStatusText(status),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: _getStatusColor(status),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            _getStatusText(status),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
+
 }

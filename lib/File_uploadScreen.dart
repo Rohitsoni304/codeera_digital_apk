@@ -6,7 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key});
+  String taskid;
+   UploadScreen({super.key,required this.taskid});
 
   @override
   State<UploadScreen> createState() => _UploadScreenState();
@@ -39,14 +40,14 @@ class _UploadScreenState extends State<UploadScreen> {
   }
 
   /// Upload files and review to API
-  Future<void> _uploadToApi() async {
+  Future<void> _uploadToApi(String status) async {
     print("startupload");
-    if (_selectedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select at least one file.")),
-      );
-      return;
-    }
+    // if (_selectedFiles.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text("Please select at least one file.")),
+    //   );
+    //   return;
+    // }
 
     setState(() => _isUploading = true);
 
@@ -69,8 +70,8 @@ class _UploadScreenState extends State<UploadScreen> {
       request.headers['Authorization'] = 'Bearer $token';
 
       // Fields
-      request.fields['task_id'] = "6"; // static for now
-      request.fields['status'] = "3";
+      request.fields['task_id'] = widget.taskid.toString(); // static for now
+      request.fields['status'] = status;
       request.fields['client_review'] =
       _textController.text.isNotEmpty ? _textController.text : "No review";
 
@@ -153,7 +154,7 @@ class _UploadScreenState extends State<UploadScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Write a Caption",
+                          "Write a Review if any",
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
@@ -163,7 +164,7 @@ class _UploadScreenState extends State<UploadScreen> {
                           maxLines: 4,
                           maxLength: 200,
                           decoration: InputDecoration(
-                            hintText: "Share your thoughts or description...",
+                            hintText: "",
                             filled: true,
                             fillColor: Colors.grey.shade50,
                             border: OutlineInputBorder(
@@ -246,52 +247,52 @@ class _UploadScreenState extends State<UploadScreen> {
                         const SizedBox(height: 30),
 
                         /// Choose Files Button
-                        Center(
-                          child: InkWell(
-                            onTap: _pickFiles,
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: double.infinity,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Colors.blueAccent, Colors.lightBlue],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.blueAccent.withOpacity(0.4),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.upload_file_rounded,
-                                      color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "Choose Files",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Center(
+                        //   child: InkWell(
+                        //     onTap: _pickFiles,
+                        //     borderRadius: BorderRadius.circular(20),
+                        //     child: Container(
+                        //       width: double.infinity,
+                        //       height: 55,
+                        //       decoration: BoxDecoration(
+                        //         gradient: const LinearGradient(
+                        //           colors: [Colors.blueAccent, Colors.lightBlue],
+                        //           begin: Alignment.topLeft,
+                        //           end: Alignment.bottomRight,
+                        //         ),
+                        //         borderRadius: BorderRadius.circular(15),
+                        //         boxShadow: [
+                        //           BoxShadow(
+                        //             color: Colors.blueAccent.withOpacity(0.4),
+                        //             blurRadius: 10,
+                        //             offset: const Offset(0, 4),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //       child: const Row(
+                        //         mainAxisAlignment: MainAxisAlignment.center,
+                        //         children: [
+                        //           Icon(Icons.upload_file_rounded,
+                        //               color: Colors.white),
+                        //           SizedBox(width: 8),
+                        //           Text(
+                        //             "Choose Files",
+                        //             style: TextStyle(
+                        //                 fontSize: 16,
+                        //                 color: Colors.white,
+                        //                 fontWeight: FontWeight.bold),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
 
                         const SizedBox(height: 40),
 
                         /// Submit Button
                         InkWell(
-                          onTap: _uploadToApi,
+                          onTap: (){_uploadToApi('5');},
                           borderRadius: BorderRadius.circular(15),
                           child: Container(
                             width: double.infinity,
@@ -314,7 +315,42 @@ class _UploadScreenState extends State<UploadScreen> {
                             )
                                 : const Center(
                               child: Text(
-                                "Submit",
+                                "Approve",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        InkWell(
+                          onTap: (){_uploadToApi('3');},
+                          borderRadius: BorderRadius.circular(15),
+                          child: Container(
+                            width: double.infinity,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.4),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: _isUploading
+                                ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white),
+                            )
+                                : const Center(
+                              child: Text(
+                                "Need Changes",
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,

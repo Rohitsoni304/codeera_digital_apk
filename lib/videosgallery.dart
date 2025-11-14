@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
+import 'File_uploadScreen.dart';
+import 'Todayvideodetails.dart';
+
 class TodayVideosGalleryScreen extends StatefulWidget {
   const TodayVideosGalleryScreen({super.key});
 
@@ -22,7 +25,7 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
   bool isLoading = true;
   String? errorMessage;
 
-  final String _baseUrl = "https://codeeratech.in/storage/";
+  final String _baseUrl = "https://codeeratech.in/uploads/tasks/";
 
   // -----------------------------------------------------------------
   //  API call
@@ -60,6 +63,7 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
           tasks = data['tasks'] ?? [];
           isLoading = false;
         });
+        print(data);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -145,7 +149,7 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
               const SizedBox(height: 15),
               const Center(
                 child: Text(
-                  "Today's Videos",
+                  "Videos",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -216,11 +220,13 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
         crossAxisCount: 3,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.51,
       ),
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
+        print(task['file_path']);
+        print(task['file_path']);
         final videoUrl = task['file_path'] != null
             ? _baseUrl + task['file_path']
             : null;
@@ -229,6 +235,7 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
           videoUrl: videoUrl,
           title: task['title'] ?? "Untitled",
           status: task['status'] ?? 0,
+          id:task['id'] ?? 0,
         );
       },
     );
@@ -241,95 +248,162 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
     required String? videoUrl,
     required String title,
     required int status,
+    required int id,
   }) {
     return GestureDetector(
-      onTap: videoUrl == null
-          ? null
-          : () => _openVideoPlayer(context, videoUrl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ----- Thumbnail -----
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Placeholder / broken image
-                  if (videoUrl == null)
-                    Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.videocam_off,
-                          color: Colors.grey, size: 36),
-                    )
-                  else
-                  // Real thumbnail (first frame) – we use VideoPlayer to get it
-                    _VideoThumbnailPlayer(url: videoUrl),
+      onTap:(){
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoDetails(postvideo: videoUrl.toString(),id: id.toString(),name: title,),
+          ),
+        );
+      },
+      //videoUrl == null ? null : () => _openVideoPlayer(context, videoUrl),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              Colors.grey.shade50,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-                  // Play icon overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.35),
-                          Colors.transparent,
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
+            // --- Video Thumbnail ---
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Placeholder
+                    if (videoUrl == null)
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.grey.shade200,
+                              Colors.grey.shade300,
+                            ],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.videocam_off_rounded,
+                          color: Colors.grey.shade500,
+                          size: 40,
+                        ),
+                      )
+                    else
+                      _VideoThumbnailPlayer(url: videoUrl),
+
+                    // Dark overlay + Play Button
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.35),
+                            Colors.transparent,
+                          ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
+
+                    Center(
                       child: Icon(
                         Icons.play_circle_fill_rounded,
+                        size: 48,
+                        color: Colors.white.withOpacity(0.95),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            SizedBox(height: 10),
+
+            // --- Video Title ---
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+                color: Colors.black87,
+              ),
+            ),
+
+            SizedBox(height: 8),
+
+            // --- Status Badge ---
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _statusColor(status),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _statusText(status),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 10),
+
+            // --- Update Status Button ---
+            if (status == 0)
+              InkWell(
+                onTap: () {
+
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Update Status",
+                      style: TextStyle(
                         color: Colors.white,
-                        size: 36,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          // ----- Title -----
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          // ----- Status badge -----
-          Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: _statusColor(status),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              _statusText(status),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 
   // -----------------------------------------------------------------
   //  Open full-screen player (Chewie)

@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'File_uploadScreen.dart';
 
-void main() {
-  runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: TodayVideosScreen()));
-}
 
 class TodayVideosScreen extends StatefulWidget {
   const TodayVideosScreen({super.key});
@@ -131,12 +128,12 @@ class _TodayVideosScreenState extends State<TodayVideosScreen>
                 children: [
                   _iconButton(FontAwesomeIcons.solidHeart),
                   InkWell(onTap: (){
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UploadScreen(),
-                      ),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => const UploadScreen(),
+                    //   ),
+                    // );
 
                   },
                       child: _iconButton(FontAwesomeIcons.penToSquare)),
