@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:video_player/video_player.dart';
 import 'BottomBar.dart';
 import 'constant.dart';
 
@@ -37,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? errorMessage;
 
   final String baseUrl = "https://codeeratech.in//uploads/tasks/";
+
+
   Widget _posterCard({
     required String? imageUrl,
     required String title,
@@ -119,7 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-  Widget _posterCardvideo({
+
+
+  final String baseUrlvideos = "https://codeeratech.in/uploads/tasks/";
+  Widget _posterVideos({
     required String? imageUrl,
     required String title,
     required int status,
@@ -184,6 +191,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 4),
+        status==3?InkWell(onTap: (){
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>UploadScreen(taskid: id.toString(),)));
+        },child: Container(  decoration: BoxDecoration(
+          color:Colors.red,
+          borderRadius: BorderRadius.circular(4),
+        ),child: Center(child: Text("Need Changes",style: TextStyle(color: Colors.white),)),)):SizedBox(),
         status==0? InkWell(onTap: (){
           Navigator.push(context, MaterialPageRoute(builder: (context)=>UploadScreen(taskid: id.toString(),)));
         },child: Container(  decoration: BoxDecoration(
@@ -730,50 +743,42 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               SizedBox(height: height * 0.03),
-
-
-              /// 🆕 Recent Uploads
-              Text(
-                "Recent Uploads",
-                style: TextStyle(fontSize: width * 0.05, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: height * 0.015),
-              SizedBox(
-                height: 180,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildTaskContainer(tasks, isLoading, errorMessage),
-                    const SizedBox(width: 12),
-                    _buildTaskContainer(tasks2, isLoading, errorMessage),
-                  ],
-                ),
-              ),
-
-              // SizedBox(
-              //   height: height * 0.15,
-              //   child: ListView(
-              //     scrollDirection: Axis.horizontal,
-              //     children:  [
-              //
-              //       InkWell(onTap: (){
-              //         Navigator.push(context, MaterialPageRoute(builder: (context)=>TodayVideosScreen()));
-              //       },
-              //           child: UploadCard(title: "Today's\nVideos", color: Colors.redAccent)),
-              //       UploadCard(title: "Today's\nPosters", color: Colors.amberAccent),
-              //       UploadCard(title: "Posters", color: Colors.brown),
-              //       UploadCard(title: "Videos", color: Colors.amber),
-              //     ],
-              //   ),
-              // ),
-            ],
+          // 🆕 Recent Uploads
+          Text(
+            "Recent Uploads",
+            style: TextStyle(fontSize: width * 0.05, fontWeight: FontWeight.bold),
           ),
-        ),
-      ),
-    );
-  }
 
-  BarChartGroupData _bar(int x, double y) {
+          SizedBox(height: height * 0.02),
+
+          SizedBox(
+            height: 150,   // container thoda compact
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  // Posters (NO TITLE)
+                  SizedBox(
+                    width: 160,
+                    child: _recentList(tasks),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Videos (NO TITLE)
+                  SizedBox(
+                    width: 160,
+                    child: _recentList2(tasks2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        ]))));
+            }
+
+            BarChartGroupData _bar(int x, double y) {
     return BarChartGroupData(
       x: x,
       barRods: [
@@ -786,6 +791,43 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+}
+
+
+Widget _recentItemContainervideo({
+  required String title,
+  required List tasks,
+  required bool isLoading,
+}) {
+  return  Container(
+      width: 170,
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          SizedBox(
+            height: 140,
+            child: isLoading
+                ? _recentShimmer()
+                : tasks.isEmpty
+                ? const Center(
+              child: Text(
+                "No data found",
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+                : _recentList2(tasks),
+          ),
+        ],
+      ),
+  );
 }
 
 /// Widgets below unchanged — just responsive in sizing
@@ -932,5 +974,203 @@ class UploadCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+Widget _recentItemContainer({
+  required String title,
+  required List tasks,
+  required bool isLoading,
+}) {
+  return Container(
+    width: 170,
+    padding: const EdgeInsets.all(10),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+
+        SizedBox(
+          height: 140,
+          child: isLoading
+              ? _recentShimmer()
+              : tasks.isEmpty
+              ? const Center(
+            child: Text(
+              "No data found",
+              style: TextStyle(color: Colors.grey),
+            ),
+          )
+              : _recentList(tasks),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _recentShimmer() {
+  return ListView.separated(
+    scrollDirection: Axis.horizontal,
+    itemCount: 4,
+    separatorBuilder: (_, __) => const SizedBox(width: 10),
+    itemBuilder: (_, __) {
+      return Shimmer.fromColors(
+        baseColor: Colors.grey.shade300,
+        highlightColor: Colors.grey.shade100,
+        child: Container(
+          width: 120,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    },
+  );
+}
+Widget _recentList(List tasks) {
+  return ListView.separated(
+    scrollDirection: Axis.horizontal,
+    itemCount: tasks.length,
+    separatorBuilder: (_, __) => const SizedBox(width: 10),
+    itemBuilder: (context, index) {
+      final t = tasks[index];
+      final imageUrl = t["file_path"] != null
+          ? "https://codeeratech.in/uploads/tasks/${t['file_path']}"
+          : null;
+
+      return Container(
+        width: 140,
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: imageUrl != null
+              ? Image.network(
+            imageUrl,
+            fit: BoxFit.cover,     // FULL COVER
+            width: 140,
+            height: 140,
+          )
+              : Container(
+            color: Colors.grey.shade200,
+            child: const Icon(Icons.image, size: 40, color: Colors.grey),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _recentList2(List tasks) {
+  return ListView.separated(
+    scrollDirection: Axis.horizontal,
+    itemCount: tasks.length,
+    separatorBuilder: (_, __) => const SizedBox(width: 10),
+    itemBuilder: (context, index) {
+      final t = tasks[index];
+      final videoUrl = t["file_path"] != null
+          ? "https://codeeratech.in/uploads/tasks/${t['file_path']}"
+          : null;
+
+      return Container(
+        width: 140,
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _VideoThumbnailPlayer(
+            url: videoUrl.toString(),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+class _VideoThumbnailPlayer extends StatefulWidget {
+  final String url;
+  const _VideoThumbnailPlayer({required this.url});
+
+  @override
+  State<_VideoThumbnailPlayer> createState() => _VideoThumbnailPlayerState();
+}
+
+class _VideoThumbnailPlayerState extends State<_VideoThumbnailPlayer> {
+  late VideoPlayerController _controller;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.network(widget.url)
+      ..initialize().then((_) {
+        if (mounted) setState(() {});
+        _controller.setVolume(0);
+        _controller.pause();
+      }).catchError((e) {
+        if (mounted) setState(() => _hasError = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.broken_image,
+            color: Colors.grey, size: 30),
+      );
+    }
+
+    return _controller.value.isInitialized
+        ? FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: 140,           // FIXED SIZE
+        height: 140,
+        child: VideoPlayer(_controller),
+      ),
+    )
+        : Container(
+      width: 140,
+      height: 140,
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+
   }
 }

@@ -1,18 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'File_uploadScreen.dart';
+// today_post_split_screen.dart
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'File_uploadScreen.dart';
 
 class TodayPostscreen extends StatefulWidget {
-  String postimage;
-  String id;
-  String name;
+  final String postimage;
+  final String id;
+  final String name;
 
-  TodayPostscreen({
+  const TodayPostscreen({
     super.key,
     required this.postimage,
     required this.id,
@@ -23,59 +24,45 @@ class TodayPostscreen extends StatefulWidget {
   State<TodayPostscreen> createState() => _TodayPostscreenState();
 }
 
-class _TodayPostscreenState extends State<TodayPostscreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-
-  // Animation for BORDER
-  late AnimationController borderController;
-  late Animation<double> borderAnimation;
-
-  final TextEditingController _textController = TextEditingController();
+class _TodayPostscreenState extends State<TodayPostscreen> {
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedFiles = [];
   bool _isUploading = false;
+  bool _isPicking = false;
 
-  @override
-  void initState() {
-    super.initState();
-
-    // SCALE ANIMATION (Original Code)
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 1, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
-    // BORDER ANIMATION
-    borderController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-
-    borderAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: borderController, curve: Curves.linear),
-    );
+  // Pick multiple images (attachments)
+  Future<void> _pickAttachments() async {
+    try {
+      setState(() => _isPicking = true);
+      final List<XFile>? images = await _picker.pickMultiImage(imageQuality: 85);
+      if (images != null && images.isNotEmpty) {
+        _selectedFiles.clear();
+        _selectedFiles.addAll(images);
+      }
+    } catch (e) {
+      debugPrint("Picker error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to pick images: $e")),
+      );
+    } finally {
+      setState(() => _isPicking = false);
+    }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    borderController.dispose();
-    super.dispose();
-  }
-
+  // Upload to same API as you had earlier
   Future<void> _uploadToApi(String status) async {
     setState(() => _isUploading = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
-      if (token == null) return;
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Auth token missing — please login again.")),
+        );
+        setState(() => _isUploading = false);
+        return;
+      }
 
       var uri = Uri.parse('https://codeeratech.in/api/tasks/update');
       var request = http.MultipartRequest('POST', uri);
@@ -83,36 +70,168 @@ class _TodayPostscreenState extends State<TodayPostscreen>
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['task_id'] = widget.id;
       request.fields['status'] = status;
-      request.fields['client_review'] = "Approved";
+      request.fields['client_review'] = status == '5' ? "Approved" : "Needs changes";
 
+      // Attach selected files if any
       for (var file in _selectedFiles) {
+        // Use file.path; image_picker returns XFile
         request.files.add(await http.MultipartFile.fromPath(
           'client_attached_files[]',
           file.path,
         ));
       }
 
-      var response = await request.send();
-      var body = await response.stream.bytesToString();
-      var res = jsonDecode(body);
+      final streamResponse = await request.send();
+      final bodyString = await streamResponse.stream.bytesToString();
+      // try to decode safely
+      dynamic data;
+      try {
+        data = jsonDecode(bodyString);
+      } catch (_) {
+        data = {'message': bodyString};
+      }
 
-      if (response.statusCode == 200) {
-        Navigator.pop(context);
+      if (streamResponse.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data?['message'] ?? 'Uploaded successfully')),
+        );
+        Navigator.pop(context); // close screen after success
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data?['message'] ?? 'Upload failed')),
+        );
       }
     } catch (e) {
-      print("Upload error: $e");
+      debugPrint("Upload error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Network error: $e")),
+      );
+    } finally {
+      setState(() => _isUploading = false);
     }
-
-    setState(() => _isUploading = false);
   }
 
-  void _openFeedbackScreen(BuildContext context) async {
-    await _controller.forward();
-    await Navigator.push(
+  // Open feedback/chat screen (simple placeholder navigation)
+  void _openChat() {
+    Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const VideoFeedbackScreen()),
+      MaterialPageRoute(builder: (_) => const ModernFeedbackScreen()),
     );
-    _controller.reverse();
+  }
+
+  // Navigate to UploadScreen (keep your existing behavior)
+  void _openNeedChanges() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UploadScreen(taskid: widget.id.toString()),
+      ),
+    );
+  }
+
+  // Small helper to build gradient buttons
+  Widget _actionButton({
+    required List<Color> gradient,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    double width = 100,
+    double height = 55,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Column(
+        children: [
+          Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: gradient.last.withOpacity(0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            child: Center(
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: width,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.black87),
+              textAlign: TextAlign.center,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // Attachment preview thumbnails
+  Widget _attachmentPreview() {
+    if (_isPicking) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_selectedFiles.isEmpty) {
+      return TextButton.icon(
+        onPressed: _pickAttachments,
+        icon: const Icon(Icons.attach_file),
+        label: const Text("Attach files (optional)"),
+      );
+    }
+
+    return SizedBox(
+      height: 80,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _selectedFiles.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, i) {
+          final file = _selectedFiles[i];
+          return Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.file(
+                  File(file.path),
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: -6,
+                right: -6,
+                child: IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.red, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _selectedFiles.removeAt(i);
+                    });
+                  },
+                ),
+              )
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -120,124 +239,218 @@ class _TodayPostscreenState extends State<TodayPostscreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
-        },
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  widget.name.toString(),
-                  style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
+      // allow background image to go under status bar
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        // back button
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Top: full image (60% height). Use NetworkImage from API input.
+          SizedBox(
+            height: size.height * 0.90,
+            width: size.width,
+            child: Hero(
+              tag: "post_image_${widget.id}",
+              child: Image.network(
+                widget.postimage,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey.shade300,
+                  child: const Center(child: Icon(Icons.broken_image)),
                 ),
-                const SizedBox(height: 25),
-
-                // ⭐ ANIMATED GRADIENT BORDER ⭐
-                Hero(
-                  tag: "videoHero",
-                  child: AnimatedBuilder(
-                    animation: borderAnimation,
-                    builder: (context, child) {
-                      return Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: LinearGradient(
-                            colors: [Colors.black, Colors.white, Colors.black],
-                            stops: [
-                              (borderAnimation.value - 0.3).clamp(0.0, 1.0),
-                              borderAnimation.value,
-                              (borderAnimation.value + 0.3).clamp(0.0, 1.0),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Container(
-                          height: size.height * 0.55,
-                          width: 300,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            image: DecorationImage(
-                              image: NetworkImage(widget.postimage),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    InkWell(
-                        onTap: () => _uploadToApi('5'),
-                        child: _iconButton(FontAwesomeIcons.solidHeart)),
-
-                    InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  UploadScreen(taskid: widget.id.toString()),
-                            ),
-                          );
-                        },
-                        child: _iconButton(FontAwesomeIcons.penToSquare)),
-
-                    _iconButton(FontAwesomeIcons.solidCommentDots,
-                        onTap: () => _openFeedbackScreen(context)),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+
+          // Slight gradient from image -> bottom for readability
+          Positioned(
+            top: size.height * 0.45,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.55),
+                    Colors.black,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+
+          // Bottom: Draggable split sheet containing description + attachments + buttons
+          DraggableScrollableSheet(
+            initialChildSize: 0.30,
+            minChildSize: 0.15,
+            maxChildSize: 0.33,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, -3),
+                    )
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // draggable indicator
+                      Container(
+                        width: 50,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Title / description (from widget.name)
+                      Text(
+                        widget.name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Description area — you can supply more text from API if you have
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                        child: Text(
+                          // keep using name if no description available
+                          "Description: ${widget.name}",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // action buttons (three)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Approve — green gradient
+                          _actionButton(
+                            gradient: const [Color(0xFF0BAB64), Color(0xFF3BB78F)],
+                            icon: FontAwesomeIcons.check,
+                            label: "Approve",
+                            onTap: () async {
+                              if (_isUploading) return;
+                              await _uploadToApi('5');
+                            },
+                          ),
+
+                          // Need Changes — orange gradient
+                          _actionButton(
+                            gradient: const [Color(0xFFFF8A00), Color(0xFFFF5F00)],
+                            icon: FontAwesomeIcons.penToSquare,
+                            label: "Need Changes",
+                            onTap: _openNeedChanges,
+                          ),
+
+                          // Chat — blue gradient
+                          _actionButton(
+                            gradient: const [Color(0xFF3E8BFF), Color(0xFF6A5AE0)],
+                            icon: FontAwesomeIcons.solidCommentDots,
+                            label: "Chat",
+                            onTap: _openChat,
+                          ),
+                        ],
+                      ),
+
+
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _iconButton(IconData icon, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 80,
-        height: 55,
-        decoration: BoxDecoration(
-          color: Colors.blueAccent,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Icon(icon, color: Colors.white, size: 26),
-      ),
-    );
-  }
+//   // helper to build one of the three big buttons (reused)
+//   Widget _actionButton({
+//     required List<Color> gradient,
+//     required IconData icon,
+//     required String label,
+//     required VoidCallback onTap,
+//   }) {
+//     return InkWell(
+//       onTap: onTap,
+//       borderRadius: BorderRadius.circular(14),
+//       child: Column(
+//         children: [
+//           Container(
+//             width: 96,
+//             height: 56,
+//             decoration: BoxDecoration(
+//               gradient: LinearGradient(colors: gradient),
+//               borderRadius: BorderRadius.circular(14),
+//               boxShadow: [
+//                 BoxShadow(
+//                   color: gradient.last.withOpacity(0.28),
+//                   blurRadius: 10,
+//                   offset: const Offset(0, 4),
+//                 )
+//               ],
+//             ),
+//             child: Center(child: Icon(icon, color: Colors.white)),
+//           ),
+//           const SizedBox(height: 6),
+//           SizedBox(
+//             width: 96,
+//             child: Text(
+//               label,
+//               textAlign: TextAlign.center,
+//               style: const TextStyle(fontSize: 12),
+//             ),
+//           )
+//         ],
+//       ),
+//     );
+//   }
+// }
 }
-
-// ---------------- FEEDBACK SCREEN ---------------- //
-
-class VideoFeedbackScreen extends StatelessWidget {
-  const VideoFeedbackScreen({super.key});
+// Simple placeholder chat/feedback screen
+class ModernFeedbackScreen extends StatelessWidget {
+  const ModernFeedbackScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: Text("Feedback Screen")),
+    return const Scaffold(
+      appBar: null,
+      backgroundColor: Colors.white,
+      body: Center(child: Text("Chat / Feedback screen (implement as needed)")),
     );
   }
 }

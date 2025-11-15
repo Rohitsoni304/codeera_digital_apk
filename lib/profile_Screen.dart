@@ -1,4 +1,5 @@
 // ... previous imports remain same
+import 'package:codeera_digital_apk/LoginScreen.dart';
 import 'package:codeera_digital_apk/Subscription_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -342,8 +343,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              SharedPreferences preference = await SharedPreferences.getInstance();
+              await preference.clear();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginWithOtpScreen()));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Logged out successfully"),

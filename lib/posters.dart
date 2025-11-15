@@ -254,8 +254,8 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                   const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 18,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 0.51,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.58,
                   ),
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
@@ -280,7 +280,7 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
     );
   }
 
-  Widget  _posterCard({
+  Widget _posterCard({
     required String? imageUrl,
     required String title,
     required int status,
@@ -292,40 +292,36 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                TodayPostscreen(postimage: imageUrl.toString(),id: id.toString(),name:title ,),
+            builder: (context) => TodayPostscreen(
+              postimage: imageUrl.toString(),
+              id: id.toString(),
+              name: title,
+            ),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              Colors.grey.shade50,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 5,
+              spreadRadius: 1,
+              offset: Offset(2, 4),
             ),
           ],
         ),
-        padding: EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // IMAGE
+            /// ---------------- IMAGE ----------------
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: AspectRatio(
-                aspectRatio: 1,
+                aspectRatio: 0.7,
                 child: imageUrl != null
                     ? Image.network(
                   imageUrl,
@@ -335,21 +331,25 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
                     return Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.grey.shade200, Colors.grey.shade300],
+                          colors: [
+                            Colors.grey.shade200,
+                            Colors.grey.shade300,
+                          ],
                         ),
                       ),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey.shade200,
-                      child: Icon(Icons.broken_image,
-                          color: Colors.grey.shade500, size: 32),
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.grey.shade500,
+                        size: 32,
+                      ),
                     );
                   },
                 )
@@ -361,67 +361,22 @@ class _posterGalleryScreenState extends State<posterGalleryScreen> {
               ),
             ),
 
-            SizedBox(height: 10),
+            const SizedBox(height: 6),
 
-            // TITLE
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-                height: 1.2,
-              ),
-            ),
+            /// REMOVE UPDATE BUTTON (as requested)
 
-            SizedBox(height: 8),
-
-            // STATUS BUTTON
-            if (status == 0)
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UploadScreen(taskid: id.toString()),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "Update Status",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            SizedBox(height: 10),
-
-            // STATUS TAG
+            /// ---------------- STATUS ONLY ----------------
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
                 color: _getStatusColor(status),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
                 _getStatusText(status),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),

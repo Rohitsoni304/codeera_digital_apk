@@ -113,18 +113,16 @@ class _LoginWithOtpScreenState extends State<LoginWithOtpScreen> {
               // 🌟 Logo
               Center(
                 child: Container(
-                  height: size.height * 0.22,
-                  width: size.width * 0.55,
+                  height: size.height * 0.40,
+                  width: size.width * 0.70,
                   decoration: const BoxDecoration(
                     image: DecorationImage(
                       image: AssetImage("assets/images/codeera-logo.png"),
-                      fit: BoxFit.contain,
+                      fit: BoxFit.fill,
                     ),
                   ),
                 ),
               ),
-
-              SizedBox(height: size.height * 0.02),
               const Text(
                 "INNOVATE | AUTOMATE | SUCCEED",
                 style: TextStyle(
@@ -195,25 +193,43 @@ class _LoginWithOtpScreenState extends State<LoginWithOtpScreen> {
               // 🚀 Continue Button
               _isLoading
                   ? const CircularProgressIndicator(color: Colors.green)
-                  : ElevatedButton(
-                onPressed: _sendOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  minimumSize: Size(size.width * 0.8, 55),
-                  shape: RoundedRectangleBorder(
+                  : InkWell(
+                onTap: _sendOtp,
+                child: Container(
+                  height: 55,
+                  width: size.width * 0.8,
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF3B1E9D),
+                        Colors.purple,// Dark Blue-Purple shade
+                       // Bright Purple
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  elevation: 3,
-                ),
-                child: const Text(
-                  "Continue",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  child: const Center(
+                    child: Text(
+                      "Continue",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
+
 
               SizedBox(height: size.height * 0.1),
             ],
@@ -381,24 +397,42 @@ class _OTPBottomSheetState extends State<OTPBottomSheet> {
               // 🔘 Verify Button
               _isVerifying
                   ? const CircularProgressIndicator(color: Colors.green)
-                  : ElevatedButton(
-                onPressed: _verifyOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  minimumSize: Size(size.width * 0.7, 50),
-                  shape: RoundedRectangleBorder(
+                  : InkWell(
+                onTap: _verifyOtp,
+                child: Container(
+                  height: 50,
+                  width: size.width * 0.7,
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [ // Dark Blue - Purple
+                        Color(0xFF7B2FF7),
+                        Colors.purple// Bright Purple
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  elevation: 3,
-                ),
-                child: const Text(
-                  "Verify OTP",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
+                  child: const Center(
+                    child: Text(
+                      "Verify OTP",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+
             ],
           ),
         );

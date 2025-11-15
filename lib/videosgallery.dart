@@ -220,7 +220,7 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
         crossAxisCount: 3,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: 0.51,
+        childAspectRatio: 0.60,
       ),
       itemCount: tasks.length,
       itemBuilder: (context, index) {
@@ -230,10 +230,10 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
         final videoUrl = task['file_path'] != null
             ? _baseUrl + task['file_path']
             : null;
+        print(videoUrl);
 
         return _videoThumbnail(
           videoUrl: videoUrl,
-          title: task['title'] ?? "Untitled",
           status: task['status'] ?? 0,
           id:task['id'] ?? 0,
         );
@@ -246,78 +246,68 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
   // -----------------------------------------------------------------
   Widget _videoThumbnail({
     required String? videoUrl,
-    required String title,
     required int status,
     required int id,
   }) {
     return GestureDetector(
-      onTap:(){
+      onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VideoDetails(postvideo: videoUrl.toString(),id: id.toString(),name: title,),
+            builder: (context) => VideoDetails(
+              postvideo: videoUrl.toString(),
+              id: id.toString(),
+              name: '',
+            ),
           ),
         );
       },
-      //videoUrl == null ? null : () => _openVideoPlayer(context, videoUrl),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              Colors.grey.shade50,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 3),
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(2, 4),
             ),
           ],
         ),
-        padding: EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // --- Video Thumbnail ---
+            /// ---------------- VIDEO THUMBNAIL ----------------
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: AspectRatio(
-                aspectRatio: 1,
+                aspectRatio: 1.0,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Placeholder
-                    if (videoUrl == null)
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.grey.shade200,
-                              Colors.grey.shade300,
-                            ],
-                          ),
+                    videoUrl == null
+                        ? Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.grey.shade200,
+                            Colors.grey.shade300,
+                          ],
                         ),
-                        child: Icon(
-                          Icons.videocam_off_rounded,
-                          color: Colors.grey.shade500,
-                          size: 40,
-                        ),
-                      )
-                    else
-                      _VideoThumbnailPlayer(url: videoUrl),
+                      ),
+                      child: Icon(Icons.videocam_off_rounded,
+                          color: Colors.grey.shade500, size: 40),
+                    )
+                        : _VideoThumbnailPlayer(url: videoUrl),
 
-                    // Dark overlay + Play Button
+                    // Overlay
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.black.withOpacity(0.35),
+                            Colors.black.withOpacity(0.3),
                             Colors.transparent,
                           ],
                           begin: Alignment.bottomCenter,
@@ -326,10 +316,11 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
                       ),
                     ),
 
+                    // Play icon
                     Center(
                       child: Icon(
                         Icons.play_circle_fill_rounded,
-                        size: 48,
+                        size: 45,
                         color: Colors.white.withOpacity(0.95),
                       ),
                     ),
@@ -338,71 +329,35 @@ class _TodayVideosGalleryScreenState extends State<TodayVideosGalleryScreen> {
               ),
             ),
 
-            SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            // --- Video Title ---
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                height: 1.2,
-                color: Colors.black87,
-              ),
-            ),
-
-            SizedBox(height: 8),
-
-            // --- Status Badge ---
+            /// ---------------- STATUS BADGE ONLY ----------------
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
                 color: _statusColor(status),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
                 _statusText(status),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
 
-            SizedBox(height: 10),
+            const SizedBox(height: 5),
 
-            // --- Update Status Button ---
-            if (status == 0)
-              InkWell(
-                onTap: () {
-
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "Update Status",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            /// UPDATE BUTTON REMOVED ✔
           ],
         ),
       ),
     );
   }
+
+
 
 
   // -----------------------------------------------------------------
